@@ -1,7 +1,13 @@
 ---
-title: "Mocap & Sensor Data Analysis"
+title: "Mocap Data Cleaning Script"
 output: html_notebook
 ---
+
+**Purpose**
+
+The purpose of this script is to clean the mocap data and does the following: 
+1. Convert time from seconds to milliseconds
+2. Change title names
 
 ```{r, warning=FALSE}
 
@@ -18,9 +24,10 @@ library(reshape2)
 
 # Load data
 sensor_data <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_sensor.csv", show_col_types=FALSE)
+# remove all unnecessary headers
 mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_mocap.csv", skip = 3)
 mocap_data <- mocap_data[-1,]
-head(mocap_data)
+head(sensor_data)
 
 ```
 
@@ -33,6 +40,7 @@ head(mocap_data)
 # # check the column names
 # mocap_data[2, ]
 
+# Remove columns that aren't needed 
 mocap_data <- mocap_data[, !(colnames(mocap_data) %in% c("Skeleton.002.Skeleton.002", "Skeleton.002.Skeleton.002.1", "Skeleton.002.Skeleton.002.2", "Skeleton.002.Skeleton.002.3", "Skeleton.002.Skeleton.002.4", "Skeleton.002.Skeleton.002.5", "Skeleton.002.Skeleton.002.6",   "dancepad.Marker.001.3_X",   "dancepad.Marker.001.3", "dancepad.Marker.001.4", "dancepad.Marker.001.5",
   "dancepad.Marker.0010.3", "dancepad.Marker.0010.4", "dancepad.Marker.0010.5",
   "dancepad.Marker.002.3", "dancepad.Marker.002.4", "dancepad.Marker.002.5",
@@ -325,9 +333,9 @@ head(mocap_data)
 ```
 
 ```{r}
-# Rename sensor columns for easier reference
-names(sensor_data) <- paste0("Sensor_", 1:ncol(sensor_data), "_Joint_X")
-head(sensor_data)
+
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "raise_rhand_mocap_cleaned.csv")
+write.csv(mocap_data, path, row.names = FALSE)
 
 ```
 
