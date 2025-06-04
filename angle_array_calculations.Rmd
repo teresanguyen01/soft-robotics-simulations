@@ -1,0 +1,111 @@
+---
+title: "Angle Array Calculations"
+output: html_notebook
+---
+
+**Purpose**
+
+The purpose of this notebook is to calculate the angle arrays for each joint using the quaternions from the cleaned mocap data. 
+
+```{r}
+
+# import the necessary libraries
+library(readr)
+library(pracma)
+library(dplyr)
+library(tidyr)
+library(data.table)
+
+```
+
+```{r}
+
+raise_rhand_mocap = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_mocap_cleaned.csv")
+raise_rhand_sensor = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_sensor.csv")
+
+colnames(raise_rhand_mocap)
+head(raise_rhand_mocap)
+head(raise_rhand_sensor)
+
+```
+
+
+```{r}
+
+sensor_dt <- as.data.table(raise_rhand_sensor)
+
+setnames(sensor_dt, "Time..ms.", "time_ms")
+
+start_time <- sensor_dt$time_ms[1]
+sensor_dt[, time_ms := time_ms - start_time]
+
+sensor_dt[, time_sec := time_ms / 1000]
+
+head(sensor_dt[, .(time_ms, time_sec)])
+head(sensor_dt)
+
+```
+
+```{r}
+
+headers <- c("time_ms",
+             "abdomen_z", "abdomen_y", "abdomen_x",
+             "hip_x_right", "hip_z_right", "hip_y_right", "knee_right", "ankle_y_right", "ankle_x_right",
+             "hip_x_left", "hip_z_left", "hip_y_left", "knee_left", "ankle_y_left", "ankle_x_left",
+             "shoulder1_right", "shoulder2_right", "elbow_right",
+             "shoulder1_left", "shoulder2_left", "elbow_left")
+
+units <- c("",
+           "rad", "rad", "rad",
+           "rad", "rad", "rad", "rad", "rad", "rad",
+           "rad", "rad", "rad", "rad", "rad", "rad",
+           "rad", "rad", "rad", "rad", "rad", "rad")
+
+headers_with_units <- ifelse(units == "", headers, paste0(headers, " [", units, "]"))
+
+n_rows <- nrow(raise_rhand_mocap)
+angle_array <- data.frame(matrix(NA, nrow = n_rows, ncol = length(headers_with_units)))
+colnames(angle_array) <- headers_with_units
+
+angle_array$time_ms <- raise_rhand_mocap$time_ms
+
+head(angle_array)
+
+```
+
+```{r}
+
+quat_to_euler <- function(qx, qy, qz, qw) {
+  # Convert quaternion (qx, qy, qz, qw) to Euler angles in radians (XYZ order)
+  
+  # roll (x)
+  sinr_cosp <- 2 * (qw * qx + qy * qz)
+  cosr_cosp <- 1 - 2 * (qx^2 + qy^2)
+  roll <- atan2(sinr_cosp, cosr_cosp)
+
+  # pitch (y)
+  sinp <- 2 * (qw * qy - qz * qx)
+  pitch <- ifelse(abs(sinp) >= 1, sign(sinp) * pi/2, asin(sinp))
+
+  # yaw (z)
+  siny_cosp <- 2 * (qw * qz + qx * qy)
+  cosy_cosp <- 1 - 2 * (qy^2 + qz^2)
+  yaw <- atan2(siny_cosp, cosy_cosp)
+
+  return(c(roll, pitch, yaw))
+}
+
+quats <- raise_rhand_mocap %>% select(time_ms, qx = abdomen_X, qy = abdomen_Y, qz = abdomen_Z, qw = abdomen_W)
+
+euler_matrix <- t(mapply(quat_to_euler, quats$qx, quats$qy, quats$qz, quats$qw))
+euler_df <- as.data.frame(euler_matrix)
+colnames(euler_df) <- c("abdomen_x [rad]", "abdomen_y [rad]", "abdomen_z [rad]")
+
+angle_array$`abdomen_x [rad]` <- euler_df$`abdomen_x [rad]`
+angle_array$`abdomen_y [rad]` <- euler_df$`abdomen_y [rad]`
+angle_array$`abdomen_z [rad]` <- euler_df$`abdomen_z [rad]`
+
+head(angle_array)
+
+```
+
