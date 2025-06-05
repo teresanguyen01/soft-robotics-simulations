@@ -25,7 +25,6 @@ raise_rhand_sensor = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/so
 
 colnames(raise_rhand_mocap)
 head(raise_rhand_mocap)
-head(raise_rhand_sensor)
 
 ```
 
@@ -48,24 +47,24 @@ head(sensor_dt)
 
 ```{r}
 
-headers <- c("time_ms",
+headers <- c("time_ms", "x", "y", "z", "qw", "qx", "qy", "qz",
              "abdomen_z", "abdomen_y", "abdomen_x",
              "hip_x_right", "hip_z_right", "hip_y_right", "knee_right", "ankle_y_right", "ankle_x_right",
              "hip_x_left", "hip_z_left", "hip_y_left", "knee_left", "ankle_y_left", "ankle_x_left",
              "shoulder1_right", "shoulder2_right", "elbow_right",
              "shoulder1_left", "shoulder2_left", "elbow_left")
 
-units <- c("",
-           "rad", "rad", "rad",
-           "rad", "rad", "rad", "rad", "rad", "rad",
-           "rad", "rad", "rad", "rad", "rad", "rad",
-           "rad", "rad", "rad", "rad", "rad", "rad")
+# units <- c("",
+#            "rad", "rad", "rad",
+#            "rad", "rad", "rad", "rad", "rad", "rad",
+#            "rad", "rad", "rad", "rad", "rad", "rad",
+#            "rad", "rad", "rad", "rad", "rad", "rad")
 
-headers_with_units <- ifelse(units == "", headers, paste0(headers, " [", units, "]"))
+# headers_with_units <- ifelse(units == "", headers, paste0(headers, " [", units, "]"))
 
 n_rows <- nrow(raise_rhand_mocap)
-angle_array <- data.frame(matrix(NA, nrow = n_rows, ncol = length(headers_with_units)))
-colnames(angle_array) <- headers_with_units
+angle_array <- data.frame(matrix(NA, nrow = n_rows, ncol = length(headers)))
+colnames(angle_array) <- headers
 
 angle_array$time_ms <- raise_rhand_mocap$time_ms
 
@@ -76,8 +75,7 @@ head(angle_array)
 ```{r}
 
 quat_to_euler <- function(qx, qy, qz, qw) {
-  # Convert quaternion (qx, qy, qz, qw) to Euler angles in radians (XYZ order)
-  
+
   # roll (x)
   sinr_cosp <- 2 * (qw * qx + qy * qz)
   cosr_cosp <- 1 - 2 * (qx^2 + qy^2)
@@ -95,17 +93,224 @@ quat_to_euler <- function(qx, qy, qz, qw) {
   return(c(roll, pitch, yaw))
 }
 
-quats <- raise_rhand_mocap %>% select(time_ms, qx = abdomen_X, qy = abdomen_Y, qz = abdomen_Z, qw = abdomen_W)
+```
 
-euler_matrix <- t(mapply(quat_to_euler, quats$qx, quats$qy, quats$qz, quats$qw))
-euler_df <- as.data.frame(euler_matrix)
-colnames(euler_df) <- c("abdomen_x [rad]", "abdomen_y [rad]", "abdomen_z [rad]")
+**Base**
 
-angle_array$`abdomen_x [rad]` <- euler_df$`abdomen_x [rad]`
-angle_array$`abdomen_y [rad]` <- euler_df$`abdomen_y [rad]`
-angle_array$`abdomen_z [rad]` <- euler_df$`abdomen_z [rad]`
+```{r}
+
+angle_array$x <- raise_rhand_mocap$`base_X` / 1000
+angle_array$y <- raise_rhand_mocap$`base_Y.1` / 1000
+angle_array$z <- raise_rhand_mocap$`base_Z.1` / 1000
+angle_array$qw <- raise_rhand_mocap$`base_W`
+angle_array$qx <- raise_rhand_mocap$`Skeleton.002.Skeleton.002_X`
+angle_array$qy <- raise_rhand_mocap$`base_Y`
+angle_array$qz <- raise_rhand_mocap$`base_Z`
 
 head(angle_array)
 
 ```
 
+**Abdomen**
+
+```{r}
+
+quats <- raise_rhand_mocap %>% select(time_ms, qx = abdomen_X, qy = abdomen_Y, qz = abdomen_Z, qw = abdomen_W)
+
+euler_matrix <- t(mapply(quat_to_euler, quats$qx, quats$qy, quats$qz, quats$qw))
+euler_df <- as.data.frame(euler_matrix)
+colnames(euler_df) <- c("abdomen_x", "abdomen_y", "abdomen_z")
+
+angle_array$`abdomen_z` <- euler_df$`abdomen_z`
+angle_array$`abdomen_y` <- euler_df$`abdomen_y`
+angle_array$`abdomen_x` <- euler_df$`abdomen_x`
+
+head(angle_array)
+
+```
+
+**Hip Right**
+
+```{r}
+
+quats_hip <- raise_rhand_mocap %>% select(qx = right_thigh_X, qy = right_thigh_Y, qz = right_thigh_Z, qw = right_thigh_W)
+
+euler_matrix_hip <- t(mapply(quat_to_euler, quats_hip$qx, quats_hip$qy, quats_hip$qz, quats_hip$qw))
+euler_df_hip <- as.data.frame(euler_matrix_hip)
+colnames(euler_df_hip) <- c("hip_x_right", "hip_y_right", "hip_z_right")
+
+angle_array$`hip_x_right` <- euler_df_hip$`hip_x_right`
+angle_array$`hip_z_right` <- euler_df_hip$`hip_z_right`
+angle_array$`hip_y_right` <- euler_df_hip$`hip_y_right`
+
+head(angle_array[, c("time_ms", "hip_x_right", "hip_y_right", "hip_z_right")])
+
+
+head(angle_array)
+# "left_thigh_X" %in% colnames(raise_rhand_mocap)
+
+
+```
+
+**Knee Right**
+
+```{r}
+
+quats_knee_right <- raise_rhand_mocap %>% select(qx = right_shin_X, qy = right_shin_Y, qz = right_shin_Z, qw = right_shin_W)
+
+euler_knee_right <- t(mapply(quat_to_euler, quats_knee_right$qx, quats_knee_right$qy, quats_knee_right$qz, quats_knee_right$qw))
+knee_right_angle <- as.data.frame(euler_knee_right)[,1]
+
+angle_array$`knee_right` <- knee_right_angle
+
+head(angle_array)
+
+```
+
+**Ankle Right**
+
+```{r}
+
+quats_ankle_right <- raise_rhand_mocap %>% select(qx = right_foot_X, qy = right_foot_Y, qz = right_foot_Z, qw = right_foot_W)
+
+euler_ankle_right <- t(mapply(quat_to_euler, quats_ankle_right$qx, quats_ankle_right$qy, quats_ankle_right$qz, quats_ankle_right$qw))
+euler_df_ankle_right <- as.data.frame(euler_ankle_right)
+
+angle_array$`ankle_x_right` <- euler_df_ankle_right[, 1]
+angle_array$`ankle_y_right` <- euler_df_ankle_right[, 2]
+
+head(angle_array[, c("time_ms", "ankle_x_right", "ankle_y_right")])
+
+head(angle_array)
+
+
+```
+
+**Hip Left**
+
+```{r}
+
+quats_hip <- raise_rhand_mocap %>% select(qx = left_thigh_X, qy = left_thigh_Y, qz = left_thigh_Z, qw = left_thigh_W)
+colnames(raise_rhand_mocap)
+euler_matrix_hip <- t(mapply(quat_to_euler, quats_hip$qx, quats_hip$qy, quats_hip$qz, quats_hip$qw))
+euler_df_hip <- as.data.frame(euler_matrix_hip)
+colnames(euler_df_hip) <- c("hip_x_left [rad]", "hip_y_left [rad]", "hip_z_left [rad]")
+
+angle_array$`hip_x_left` <- euler_df_hip$`hip_x_left [rad]`
+angle_array$`hip_z_left` <- euler_df_hip$`hip_z_left [rad]`
+angle_array$`hip_y_left` <- euler_df_hip$`hip_y_left [rad]`
+
+head(angle_array[, c("time_ms", "hip_x_left", "hip_z_left", "hip_y_left")])
+
+head(angle_array)
+colnames(angle_array)
+
+```
+
+**Knees**
+
+For knees, we only keep 1 angle (roll - X) because the main rotation happens around the X axis. 
+"No, you don't need to control all three angles (flexion, extension, and rotation) in the knee joint for typical daily activities. The knee primarily functions with flexion and extension (bending and straightening). While there's some degree of rotational movement, it's minimal and primarily occurs with the ankle and hip joints."
+
+**Knee Left**
+
+```{r}
+
+quats_knee_left <- raise_rhand_mocap %>% select(qx = left_shin_X, qy = left_shin_Y, qz = left_shin_Z, qw = left_shin_W)
+
+euler_knee_left <- t(mapply(quat_to_euler, quats_knee_left$qx, quats_knee_left$qy, quats_knee_left$qz, quats_knee_left$qw))
+knee_left_angle <- as.data.frame(euler_knee_left)[,1]
+
+angle_array$`knee_left` <- knee_left_angle
+
+head(angle_array)
+colnames(angle_array)
+
+```
+
+Ankles are primarily focused on the plantar and dorsiflexion (X) and inversion eversion (Y) 
+
+
+**Ankle Left**
+
+```{r}
+
+quats_ankle_left <- raise_rhand_mocap %>% select(qx = left_foot_X, qy = left_foot_Y, qz = left_foot_Z, qw = left_foot_W)
+
+euler_ankle_left <- t(mapply(quat_to_euler, quats_ankle_left$qx, quats_ankle_left$qy, quats_ankle_left$qz, quats_ankle_left$qw))
+euler_df_ankle_left <- as.data.frame(euler_ankle_left)
+
+angle_array$`ankle_y_left` <- euler_df_ankle_left[, 2]
+angle_array$`ankle_x_left` <- euler_df_ankle_left[, 1]
+
+head(angle_array)
+
+```
+
+**Shoulders**
+
+We use upper arms instead of shoulders from the mocap data because the shoulder joint controls the movement of the uper arm so in order to get the shoulder joint movements, we need to analuze how the upper arm is oriented over time.
+
+***Right Shoulder***
+
+```{r}
+
+quats_shoulder_right <- raise_rhand_mocap %>% select(qx = right_upper_arm_X, qy = right_upper_arm_Y, qz = right_upper_arm_Z, qw = right_upper_arm_W)
+euler_shoulder_right <- t(mapply(quat_to_euler, quats_shoulder_right$qx, quats_shoulder_right$qy, quats_shoulder_right$qz, quats_shoulder_right$qw))
+
+euler_df_shoulder_right <- as.data.frame(euler_shoulder_right)
+
+angle_array$`shoulder1_right` <- euler_df_shoulder_right[, 2]
+angle_array$`shoulder2_right` <- euler_df_shoulder_right[, 1]
+
+head(angle_array)
+
+```
+
+**Elbow Right**
+
+```{r}
+quats_elbow_right <- raise_rhand_mocap %>% select(qx = right_forearm_X, qy = right_forearm_Y, qz = right_forearm_Z, qw = right_forearm_W)
+euler_df_elbow_right <- as.data.frame(t(mapply(quat_to_euler, quats_elbow_right$qx, quats_elbow_right$qy, quats_elbow_right$qz, quats_elbow_right$qw)))
+angle_array$`elbow_right` <- euler_df_elbow_right[, 1]
+
+head(angle_array)
+
+```
+
+**Shoulder Left**
+
+```{r}
+
+quats_shoulder_left <- raise_rhand_mocap %>% select(qx = left_upper_arm_X, qy = left_upper_arm_Y, qz = left_upper_arm_Z, qw = left_upper_arm_W)
+
+euler_shoulder_left <- t(mapply(quat_to_euler, quats_shoulder_left$qx, quats_shoulder_left$qy, quats_shoulder_left$qz,
+                                quats_shoulder_left$qw))
+euler_df_shoulder_left <- as.data.frame(euler_shoulder_left)
+
+angle_array$`shoulder1_left` <- euler_df_shoulder_left[, 2]
+angle_array$`shoulder2_left` <- euler_df_shoulder_left[, 1]
+
+head(angle_array[, c("time_ms", "shoulder1_left", "shoulder2_left")])
+
+```
+
+***Elbow Left***
+
+```{r}
+
+quats_elbow_left <- raise_rhand_mocap %>% select(qx = left_forearm_X, qy = left_forearm_Y, qz = left_forearm_Z, qw = left_forearm_W)
+euler_df_elbow_left <- as.data.frame(t(mapply(quat_to_euler, quats_elbow_left$qx, quats_elbow_left$qy, quats_elbow_left$qz, quats_elbow_left$qw)))
+angle_array$`elbow_left` <- euler_df_elbow_left[, 1]
+
+head(angle_array)
+
+```
+
+
+```{r}
+
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "angle_array_rhand_mocap.csv")
+write.csv(angle_array, path, row.names = FALSE)
+
+```
