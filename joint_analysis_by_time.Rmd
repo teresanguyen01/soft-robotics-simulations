@@ -73,6 +73,47 @@ ggplot(angle_array, aes(x = time_ms, y = elbow_right)) +
 
 ```{r}
 
+library(ggplot2)
+library(readr)
 
+angle_array <- read.csv("~/Documents/Faboratory Stuff/soft-robotics-simulations/data/angle_array_lhand_mocap.csv")
+
+ggplot(angle_array, aes(x = time_ms)) +
+  geom_line(aes(y = shoulder1_right, color = "shoulder1_right")) +
+  geom_line(aes(y = shoulder2_right, color = "shoulder2_right")) +
+  labs(title = "Right Shoulder Joint Angles Over Time", x = "Time (ms)", y = "Angle (rad)") +
+  scale_color_manual(values = c("shoulder1_right" = "blue", "shoulder2_right" = "red")) +
+  theme_minimal()
+
+library(tidyr)
+
+elbow_data <- angle_array %>%
+  select(time_ms, elbow_right, elbow_left) %>%
+  pivot_longer(cols = c(elbow_right, elbow_left), names_to = "joint", values_to = "angle")
+
+ggplot(elbow_data, aes(x = time_ms, y = angle, color = joint)) +
+  geom_line() +
+  labs(
+    title = "Elbow Joint Angles Over Time",
+    x = "Time (ms)",
+    y = "Angle (rad)"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(angle_array, aes(x = time_ms)) +
+  geom_line(aes(y = elbow_right, color = "elbow_right")) +
+  geom_line(aes(y = elbow_left, color = "elbow_left")) +
+  labs(title = "Elbow Right & Left Angles over time", x = "Time (ms)", y = "Angle (rad)") +
+  scale_color_manual(values = c("elbow_right" = "blue", "elbow_left" = "red")) +
+  theme_minimal()
+
+ggplot(angle_array, aes(x = time_ms, y = elbow_right)) +
+  geom_line(color = "purple") +
+  labs(title = "Elbow Right Angles over time", x = "Time (ms)", y = "Angle (rad)") +
+  theme_minimal()
 
 ```

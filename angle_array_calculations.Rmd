@@ -20,8 +20,8 @@ library(data.table)
 
 ```{r}
 
-raise_rhand_mocap = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_mocap_cleaned.csv")
-raise_rhand_sensor = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_sensor.csv")
+raise_rhand_mocap = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap_cleaned.csv")
+raise_rhand_sensor = read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_sensor.csv")
 
 colnames(raise_rhand_mocap)
 head(raise_rhand_mocap)
@@ -310,7 +310,7 @@ head(angle_array)
 
 ```{r}
 
-path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "angle_array_rhand_mocap.csv")
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "angle_array_lhand_mocap.csv")
 write.csv(angle_array, path, row.names = FALSE)
 
 ```
