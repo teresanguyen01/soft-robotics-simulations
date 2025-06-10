@@ -23,9 +23,9 @@ library(reshape2)
 ```{r}
 
 # Load data
-sensor_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_sensor.csv")
+sensor_data <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_sensor.csv", show_col_types=FALSE)
 # remove all unnecessary headers
-mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/bending_back_mocap.csv", skip = 3)
+mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap.csv", skip = 3)
 mocap_data <- mocap_data[-1,]
 head(sensor_data)
 
@@ -335,7 +335,7 @@ head(mocap_data)
 
 ```{r}
 
-path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "bending_back_mocap_cleaned.csv")
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "raise_lhand_mocap_cleaned.csv")
 write.csv(mocap_data, path, row.names = FALSE)
 
 ```
