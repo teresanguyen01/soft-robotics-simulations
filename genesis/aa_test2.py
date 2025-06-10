@@ -13,7 +13,7 @@ robot = scene.add_entity(
     gs.morphs.MJCF(file="genesis/xml/humanoid.xml"),
     vis_mode="collision"
 )
-
+# robot.set_dynamics_enabled(True)
 # plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
 scene.build()
 
@@ -60,17 +60,17 @@ csv_to_dof = {
     'elbow_right': ['elbow_right'],
     'elbow_left': ['elbow_left']
 }
-
+qpos = np.zeros(robot.get_qpos().shape[0])
+qpos[0:3] = [0, 0, 1.3]
+qpos[3:7] = [1, 0, 0, 0]
 for frame_idx, row in df.iterrows():
-    qpos = np.zeros(robot.get_qpos().shape[0])
+    # qpos = np.zeros(robot.get_qpos().shape[0])
     print("qpos", qpos)
     print(len(qpos))
 
     # Root pose
     # qpos[0:3] = row[['x', 'y', 'z']]
     # qpos[3:7] = row[['qw', 'qx', 'qy', 'qz']]
-    qpos[0:3] = [0, 0, 1.2]
-    qpos[3:7] = [1, 0, 0, 0]
 
     # DOF values
     for csv_col, dof_list in csv_to_dof.items():

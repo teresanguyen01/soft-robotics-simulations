@@ -17,7 +17,7 @@ robot = scene.add_entity(
 print("joints", robot.joints)
 plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
 scene.build()
-df = pd.read_csv("genesis/data/angle_array_rhand_mocap.csv")
+df = pd.read_csv("genesis/data/angle_array_double_arm_lat.csv")
 
 # dof_names = [joint.name for joint in robot.joints]
 
@@ -43,7 +43,7 @@ csv_to_dof = {
     'ankle_y_left': ['ankle_y_left'],
     'ankle_x_left': ['ankle_x_left']
 }
-# Build dof name list
+# Map DOF names to indices
 dof_names = []
 for joint in robot.joints:
     start, end = joint.dof_start, joint.dof_end
@@ -54,29 +54,20 @@ for joint in robot.joints:
         for i in range(dof_count):
             dof_names.append(f"{joint.name}_{i}")
 
-# Map for indexing
+print("DOF Names in Genesis Order:")
+for i, name in enumerate(dof_names):
+    print(f"  {i + 7}: {name}")  # +7 because root takes first 7 slots
+
+# Create mapping for easy lookup
 dof_idx_map = {name: i for i, name in enumerate(dof_names)}
+print("\nDOF Index Map:")
+print(dof_idx_map)
 
-# Auto-match CSV columns to existing DOFs
-csv_cols = set(df.columns)
-csv_to_dof = {}
+print(f"robot.get_qpos().shape[0] = {robot.get_qpos().shape[0]}")
+print(f"# of DOFs (excluding root): {robot.get_qpos().shape[0] - 7}")
+print(f"# of joint DOFs in dof_names: {len(dof_names)}")
 
-for name in dof_names:
-    # Try exact match
-    if name in csv_cols:
-        csv_to_dof[name] = [name]
-    else:
-        # Try base joint name if name ends in _0, _1, etc.
-        base = name.rsplit('_', 1)[0]
-        if base in csv_cols:
-            if base not in csv_to_dof:
-                csv_to_dof[base] = []
-            csv_to_dof[base].append(name)
-
-print("\n✅ Auto-matched csv_to_dof:")
-for k, v in csv_to_dof.items():
-    print(f"  {k}: {v}")
-    
+# Animate
 for frame_idx, row in df.iterrows():
     qpos = np.zeros(robot.get_qpos().shape[0])
 
@@ -98,7 +89,6 @@ for frame_idx, row in df.iterrows():
                     print(f"[ERROR] Attempting to write qpos[{idx}], but qpos length is {len(qpos)}")
                 else:
                     qpos[idx] = value
-                # qpos[idx] = value
                 print(f"Set qpos[{idx}] ({dof}) = {value}")
             else:
                 print(f"[Warning] DOF '{dof}' from column '{col}' not found in Genesis model")
