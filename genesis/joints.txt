@@ -1,0 +1,33 @@
+['_IK_L', '_IK_U', '_IK_delta_qpos', '_IK_err_pose', '_IK_err_pose_best', '_IK_error_dim', '_IK_inv', '_IK_jacobian', '_IK_jacobian_T', '_IK_mat', '_IK_n_tgts', '_IK_qpos_best', '_IK_qpos_orig', '_IK_vec', '_IK_y', '__class__', '__colorized__repr__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_add_by_info', '_add_joint', '_add_link', '_build', '_cell_start', '_data_oriented', '_dof_start', '_edge_start', '_face_start', '_func_get_jacobian', '_geom_start', '_geoms', '_get_dofs_idx', '_get_dofs_idx_local', '_get_ls_idx', '_get_ls_idx_local', '_get_qs_idx', '_get_qs_idx_local', '_idx', '_idx_in_solver', '_init_jac_and_IK', '_is_built', '_is_debugger', '_is_ompl_state_valid', '_jacobian', '_joint_start', '_joints', '_kernel_get_jacobian', '_kernel_get_verts', '_kernel_inverse_kinematics', '_link_start', '_links', '_load_MJCF', '_load_URDF', '_load_mesh', '_load_model', '_load_primitive', '_load_terrain', '_material', '_morph', '_n_dofs', '_n_qs', '_ompl_state_to_tensor', '_ompl_states_to_tensor_list', '_q_start', '_repr_brief', '_repr_briefer', '_repr_type', '_requires_jac_and_IK', '_scene', '_sim', '_solver', '_surface', '_uid', '_update_child_idxs', '_vert_start', '_vface_start', '_vgeom_start', '_vgeoms', '_visualize_contact', '_vvert_start', 'base_joint', 'base_link', 'base_link_idx', 'cell_end', 'cell_start', 'control_dofs_force', 'control_dofs_position', 'control_dofs_velocity', 'detect_collision', 'dof_end', 'dof_start', 'edge_start', 'face_start', 'geom_end', 'geom_start', 'geoms', 'get_AABB', 'get_ang', 'get_contacts', 'get_dofs_armature', 'get_dofs_control_force', 'get_dofs_damping', 'get_dofs_force', 'get_dofs_force_range', 'get_dofs_invweight', 'get_dofs_kp', 'get_dofs_kv', 'get_dofs_limit', 'get_dofs_position', 'get_dofs_stiffness', 'get_dofs_velocity', 'get_jacobian', 'get_joint', 'get_link', 'get_links_ang', 'get_links_inertial_mass', 'get_links_invweight', 'get_links_net_contact_force', 'get_links_pos', 'get_links_quat', 'get_links_vel', 'get_mass', 'get_pos', 'get_qpos', 'get_quat', 'get_vel', 'get_verts', 'gravity_compensation', 'idx', 'init_qpos', 'inverse_kinematics', 'inverse_kinematics_multilink', 'is_built', 'joints', 'link_end', 'link_start', 'links', 'material', 'morph', 'n_cells', 'n_dofs', 'n_edges', 'n_faces', 'n_geoms', 'n_joints', 'n_links', 'n_qs', 'n_verts', 'n_vfaces', 'n_vgeoms', 'n_vverts', 'plan_path', 'q_end', 'q_limit', 'q_start', 'scene', 'set_COM_shift', 'set_dofs_armature', 'set_dofs_damping', 'set_dofs_force_range', 'set_dofs_invweight', 'set_dofs_kp', 'set_dofs_kv', 'set_dofs_position', 'set_dofs_stiffness', 'set_dofs_velocity', 'set_friction', 'set_friction_ratio', 'set_links_inertial_mass', 'set_links_invweight', 'set_mass_shift', 'set_pos', 'set_qpos', 'set_quat', 'sim', 'solver', 'surface', 'uid', 'vert_start', 'vface_start', 'vgeoms', 'visualize_contact', 'vvert_start', 'zero_all_dofs_velocity']
+
+<gs.List>(len=17, [
+    <gs.RigidJoint>: <befc439>, name: 'root', idx: 0, type: <FREE: 4>,
+    <gs.RigidJoint>: <568bf0a>, name: 'head_joint', idx: 1, type: <FIXED: 0>,
+    <gs.RigidJoint>: <964aa9e>, name: 'abdomen_z', idx: 2, type: <PLANAR: 5>,
+    <gs.RigidJoint>: <58b08b1>, name: 'shoulder1_right', idx: 3, type: <PLANAR: 5>,
+    <gs.RigidJoint>: <3dadcb3>, name: 'shoulder1_left', idx: 4, type: <PLANAR: 5>,
+    <gs.RigidJoint>: <0907cc7>, name: 'abdomen_x', idx: 5, type: <REVOLUTE: 1>,
+    <gs.RigidJoint>: <a8747f5>, name: 'elbow_right', idx: 6, type: <REVOLUTE: 1>,
+    <gs.RigidJoint>: <eed55ef>, name: 'elbow_left', idx: 7, type: <REVOLUTE: 1>,
+    <gs.RigidJoint>: <6e6b61b>, name: 'hip_x_right', idx: 8, type: <SPHERICAL: 3>,
+    ...
+    <gs.RigidJoint>: <725abd6>, name: 'world_joint', idx: 16, type: <FIXED: 0>,
+])
+
+root
+head_joint
+abdomen_z
+shoulder1_right
+shoulder1_left
+abdomen_x
+elbow_right
+elbow_left
+hip_x_right
+hip_x_left
+hand_right_joint
+hand_left_joint
+knee_right
+knee_left
+ankle_y_right
+ankle_y_left
+world_joint

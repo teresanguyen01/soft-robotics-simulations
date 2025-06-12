@@ -5,22 +5,47 @@ import numpy as np
 import pandas as pd
 import time
 
-# === Init Genesis ===
 gs.init(backend=gs.gpu)
-scene = gs.Scene(show_viewer=True)
+scene = gs.Scene(
+    show_viewer    = True,
+    viewer_options = gs.options.ViewerOptions(
+        res           = (1280, 960),
+        camera_pos    = (3.5, 0.0, 2.5),
+        camera_lookat = (0.0, 0.0, 0.5),
+        camera_fov    = 40,
+        max_FPS       = 60,
+    ),
+    vis_options = gs.options.VisOptions(
+        show_world_frame = True, # visualize the coordinate frame of `world` at its origin
+        world_frame_size = 1.0, # length of the world frame in meter
+        show_link_frame  = False, # do not visualize coordinate frames of entity links
+        show_cameras     = False, # do not visualize mesh and frustum of the cameras added
+        plane_reflection = True, # turn on plane reflection
+        ambient_light    = (0.1, 0.1, 0.1), # ambient light setting
+    ),
+    renderer = gs.renderers.Rasterizer(), # using rasterizer for camera rendering
+)
 
 robot = scene.add_entity(
     gs.morphs.MJCF(file="genesis/xml/humanoid.xml"),
     vis_mode="collision"
 )
-# robot.set_dynamics_enabled(True)
-# plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
+
+cam = scene.add_camera(
+    res    = (1280, 960),
+    pos    = (3.5, 0.0, 2.5),
+    lookat = (0, 0, 0.5),
+    fov    = 30,
+    GUI    = False
+)
+
+plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
+
 scene.build()
 
-# === Load CSV ===
-df = pd.read_csv("genesis/data/angle_array_lhand_mocap.csv")
+df = pd.read_csv("genesis/data/aa_walking_fw_bk_cleaned.csv")
 
-# === DOF Names from Genesis ===
+print("robot joints", robot.joints)
 dof_names = []
 for joint in robot.joints:
     start, end = joint.dof_start, joint.dof_end
@@ -36,7 +61,6 @@ dof_idx_map = {name: i for i, name in enumerate(joint_dof_names)}
 # dof_idx_map = {name: i for i, name in enumerate(dof_names)}
 print(dof_idx_map)
 
-# === Corrected CSV to DOF Mapping ===
 csv_to_dof = {
     'abdomen_z': ['abdomen_z_0'],
     'abdomen_y': ['abdomen_z_1'],
@@ -60,13 +84,15 @@ csv_to_dof = {
     'elbow_right': ['elbow_right'],
     'elbow_left': ['elbow_left']
 }
+cam.start_recording()
+
 qpos = np.zeros(robot.get_qpos().shape[0])
 qpos[0:3] = [0, 0, 1.3]
 qpos[3:7] = [1, 0, 0, 0]
 for frame_idx, row in df.iterrows():
     # qpos = np.zeros(robot.get_qpos().shape[0])
-    print("qpos", qpos)
-    print(len(qpos))
+    # print("qpos", qpos)
+    # print(len(qpos))
 
     # Root pose
     # qpos[0:3] = row[['x', 'y', 'z']]
@@ -74,12 +100,18 @@ for frame_idx, row in df.iterrows():
 
     # DOF values
     for csv_col, dof_list in csv_to_dof.items():
+        # print("csv col", csv_col)
+        # print("dof list", dof_list)
         for dof in dof_list:
             if dof in dof_idx_map:
                 idx = dof_idx_map[dof] + 7
-                print(idx)
+                # print(idx)
                 qpos[idx] = row[csv_col]
 
     # Apply and step
+    print("qpos", qpos)
     robot.set_qpos(qpos)
     scene.step()
+    cam.render()
+
+cam.stop_recording(save_to_filename='genesis/videos/aa_fw_bk.mp4', fps=60)
