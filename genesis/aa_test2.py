@@ -5,6 +5,20 @@ import numpy as np
 import pandas as pd
 import time
 
+
+def print_qpos_mapping(robot):
+    qpos_idx = 7  # start after root (0–6)
+    print("Index | DOF Name")
+    print("----------------")
+    for joint in robot.joints:
+        if joint.name == "root":
+            continue  # skip root
+        dof_count = joint.dof_end - joint.dof_start
+        for i in range(dof_count):
+            dof_name = f"{joint.name}_{i}" if dof_count > 1 else joint.name
+            print(f"{qpos_idx:5d} | {dof_name}")
+            qpos_idx += 1
+
 gs.init(backend=gs.gpu)
 scene = gs.Scene(
     show_viewer    = True,
@@ -43,9 +57,11 @@ plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
 
 scene.build()
 
-df = pd.read_csv("genesis/data/aa_walking_fw_bk_cleaned.csv")
+df = pd.read_csv("genesis/data/test_position_array.csv")
 
-print("robot joints", robot.joints)
+for joint in robot.joints: 
+    print(f"name: {joint.name}; idx: {joint.idx}; type: {joint.type}; DOF start: {joint.dof_start}; DOF end: {joint.dof_end}; DOF Count: {joint.dof_end - joint.dof_start}")
+
 dof_names = []
 for joint in robot.joints:
     start, end = joint.dof_start, joint.dof_end
@@ -85,33 +101,37 @@ csv_to_dof = {
     'elbow_left': ['elbow_left']
 }
 cam.start_recording()
-
+robot.set_pos([0,0,0])
 qpos = np.zeros(robot.get_qpos().shape[0])
-qpos[0:3] = [0, 0, 1.3]
+# qpos[0:3] = [0, 0, 1.3]
 qpos[3:7] = [1, 0, 0, 0]
+y_offset = 1.1
 for frame_idx, row in df.iterrows():
     # qpos = np.zeros(robot.get_qpos().shape[0])
     # print("qpos", qpos)
     # print(len(qpos))
 
     # Root pose
-    # qpos[0:3] = row[['x', 'y', 'z']]
+    qpos[0:3] = row[['z', 'y', 'x']]
+    qpos[2] = qpos[2] + y_offset
+    # x_sim = row[['x']]
+    # y_sim = -row[['z']]
+    # z_sim = row['y']
+    # qpos[0:3] = [x_sim, y_sim, z_sim]
+    # qpos[2] = row[['z']] + z_offset
     # qpos[3:7] = row[['qw', 'qx', 'qy', 'qz']]
 
-    # DOF values
     for csv_col, dof_list in csv_to_dof.items():
-        # print("csv col", csv_col)
-        # print("dof list", dof_list)
         for dof in dof_list:
             if dof in dof_idx_map:
                 idx = dof_idx_map[dof] + 7
-                # print(idx)
                 qpos[idx] = row[csv_col]
 
-    # Apply and step
-    print("qpos", qpos)
+    # print(len(qpos))
+    # print(qpos)
+    # print_qpos_mapping(robot)
     robot.set_qpos(qpos)
     scene.step()
     cam.render()
 
-cam.stop_recording(save_to_filename='genesis/videos/aa_fw_bk.mp4', fps=60)
+cam.stop_recording(save_to_filename='genesis/videos/test_video.mp4', fps=60)

@@ -50,10 +50,11 @@ cam.start_recording()
 # robot.set_qpos(robot.set)
 print("init qpos", robot.init_qpos)
 print("number of joints", robot.n_joints)
-print(robot.get_qpos())
+print(robot.get_qpos().shape)
+print(robot.dofs)
 
 for i in range(200):
-    print(robot.get_qpos())
+    # print(robot.get_qpos())
     scene.step()
     cam.render()
 
