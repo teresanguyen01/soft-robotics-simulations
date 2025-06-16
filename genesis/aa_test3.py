@@ -44,9 +44,8 @@ plane = scene.add_entity(gs.morphs.Plane(), vis_mode="collision")
 
 scene.build()
 
-df = pd.read_csv("genesis/data/aa_double_arm_lat (1).csv")
+df = pd.read_csv("genesis/data2/aa_double_arm_lat (2).csv")
 
-# Build DOF name list (excluding root)
 dof_names = []
 for joint in robot.joints:
     count = joint.dof_end - joint.dof_start
@@ -58,22 +57,17 @@ for joint in robot.joints:
         for i in range(count):
             dof_names.append(f"{joint.name}_{i}")
 
-# Map each DOF to its qpos index (offset by 7 for root)
 dof_idx_map = {name: i for i, name in enumerate(dof_names)}
 
-# Begin simulation
 cam.start_recording()
 robot.set_pos([0, 0, 0])
 qpos = np.zeros(robot.get_qpos().shape[0])
 y_offset = 1.15
-qpos[3:7] = [1, 0, 0, 0]  # neutral quaternion
+qpos[3:7] = [1, 0, 0, 0]
 
 for _, row in df.iterrows():
-    # Set root position and rotation
     qpos[0:3] = row[['z', 'y', 'x']].values
     qpos[2] += y_offset
-    # qpos[3:7] = row[['qw', 'qx', 'qy', 'qz']].values
-    # Set DOF values based on matching column names
     for dof_name, dof_idx in dof_idx_map.items():
         if dof_name in row:
             if dof_idx + 7 == 15: 
@@ -88,4 +82,4 @@ for _, row in df.iterrows():
     scene.step()
     cam.render()
 
-cam.stop_recording(save_to_filename='genesis/videos/double_arm_lat_new.mp4', fps=60)
+cam.stop_recording(save_to_filename='genesis/videos2/double_arm_lat.mp4', fps=60)
