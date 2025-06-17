@@ -1,0 +1,432 @@
+---
+title: "Angle Array Calculations 2"
+output: html_notebook
+---
+
+```{r}
+
+library(readr)
+library(pracma)
+library(dplyr)
+library(tidyr)
+library(data.table)
+library(signal)
+
+```
+
+```{r}
+
+mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/double_arm_lat_mocap_cleaned.csv")
+# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/bending_back_mocap_cleaned.csv")
+# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap_cleaned.csv")
+# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap_cleaned.csv")
+
+colnames(mocap_data)
+head(mocap_data)
+
+```
+```{r}
+
+headers <- c("time_ms", "x", "y", "z", "qw", "qx", "qy", "qz", "abdomen_z_0", "abdomen_z_1", "shoulder1_right_0", "shoulder1_right_1", "shoulder1_left_0", "shoulder1_left_1", "abdomen_x", "elbow_right", "elbow_left", "hip_x_right_0", "hip_x_right_1", "hip_x_right_2", "hip_x_left_0", "hip_x_left_1", "hip_x_left_2", "knee_right", "knee_left", "ankle_y_right_0", "ankle_y_right_1", "ankle_y_left_0", "ankle_y_left_1")
+
+n_rows <- nrow(mocap_data)
+angle_array <- data.frame(matrix(NA, nrow = n_rows, ncol = length(headers)))
+colnames(angle_array) <- headers
+
+angle_array$time_ms <- mocap_data$time_ms
+
+head(angle_array)
+
+```
+
+```{r}
+
+# this looks correct here but want to make sure
+# From analysis, the quaternion angles may be wrong since the robot is rotated around 45 degrees
+angle_array$x <- mocap_data$`base_X` / 1000
+angle_array$y <- mocap_data$`base_Y.1` / 1000
+angle_array$z <- mocap_data$`base_Z.1` / 1000
+angle_array$qw <- mocap_data$`base_W`
+angle_array$qx <- mocap_data$`Skeleton.002.Skeleton.002_X`
+angle_array$qy <- mocap_data$`base_Y`
+angle_array$qz <- mocap_data$`base_Z`
+
+```
+
+```{r}
+
+angle_array$abdomen_z_0 <- (mocap_data$`abdomen_X.1` - mocap_data$`base_X`) / 1000
+angle_array$abdomen_z_1 <- (mocap_data$`abdomen_Y.1` - mocap_data$`base_Y.1`) / 1000
+head(angle_array)
+
+```
+
+```{r}
+
+angle_array$shoulder1_right_0 <- (mocap_data$`right_shoulder_X.1` - mocap_data$chest_X.1) / 1000
+angle_array$shoulder1_right_1 <- (mocap_data$`right_shoulder_Y.1` - mocap_data$chest_Y.1) / 1000
+angle_array$shoulder1_left_0 <- (mocap_data$`left_shoulder_X.1` - mocap_data$chest_X.1) / 1000
+angle_array$shoulder1_left_1 <- (mocap_data$`left_shoulder_Y.1` - mocap_data$chest_Y.1) / 1000
+
+head(angle_array)
+
+```
+
+
+```{r}
+
+quat_to_euler <- function(qx, qy, qz, qw) {
+
+  # roll (x)
+  sinr_cosp <- 2 * (qw * qx + qy * qz)
+  cosr_cosp <- 1 - 2 * (qx^2 + qy^2)
+  roll <- atan2(sinr_cosp, cosr_cosp)
+
+  # pitch (y)
+  sinp <- 2 * (qw * qy - qz * qx)
+  pitch <- ifelse(abs(sinp) >= 1, sign(sinp) * pi/2, asin(sinp))
+
+  # yaw (z)
+  siny_cosp <- 2 * (qw * qz + qx * qy)
+  cosy_cosp <- 1 - 2 * (qy^2 + qz^2)
+  yaw <- atan2(siny_cosp, cosy_cosp)
+
+  return(c(roll, pitch, yaw))
+}
+
+
+# Function to compute relative quaternion: q_rel = q1⁻¹ * q2
+quat_relative <- function(q1, q2) {
+  # Invert q1
+  q1_inv <- c(q1[1], -q1[2], -q1[3], -q1[4])  # w, -x, -y, -z
+
+  # Extract components
+  w1 <- q1_inv[1]; x1 <- q1_inv[2]; y1 <- q1_inv[3]; z1 <- q1_inv[4]
+  w2 <- q2[1];     x2 <- q2[2];     y2 <- q2[3];     z2 <- q2[4]
+
+  # Hamilton product: q_rel = q1⁻¹ * q2
+  w <- w1*w2 - x1*x2 - y1*y2 - z1*z2
+  x <- w1*x2 + x1*w2 + y1*z2 - z1*y2
+  y <- w1*y2 - x1*z2 + y1*w2 + z1*x2
+  z <- w1*z2 + x1*y2 - y1*x2 + z1*w2
+
+  return(c(w, x, y, z))
+}
+
+# Function to convert quaternion to Euler angles (radians)
+quat_to_euler2 <- function(q) {
+  qw <- q[1]; qx <- q[2]; qy <- q[3]; qz <- q[4]
+
+  sinr_cosp <- 2 * (qw * qx + qy * qz)
+  cosr_cosp <- 1 - 2 * (qx^2 + qy^2)
+  roll <- atan2(sinr_cosp, cosr_cosp)  # X-axis rotation
+
+  sinp <- 2 * (qw * qy - qz * qx)
+  pitch <- ifelse(abs(sinp) >= 1, sign(sinp) * pi / 2, asin(sinp))  # Y-axis
+
+  siny_cosp <- 2 * (qw * qz + qx * qy)
+  cosy_cosp <- 1 - 2 * (qy^2 + qz^2)
+  yaw <- atan2(siny_cosp, cosy_cosp)  # Z-axis
+
+  return(c(roll, pitch, yaw))
+}
+
+normalize_quat <- function(q) {
+  q / sqrt(sum(q^2))
+}
+
+unwrap_angle_sequence <- function(angles) {
+  unwrapped <- numeric(length(angles))
+  unwrapped[1] <- angles[1]
+
+  for (i in 2:length(angles)) {
+    delta <- angles[i] - angles[i - 1]
+    delta <- atan2(sin(delta), cos(delta))  # properly wrap delta to (−π, π]
+    unwrapped[i] <- unwrapped[i - 1] + delta
+  }
+
+  return(unwrapped)
+}
+
+
+fix_sharp_jumps <- function(angles, threshold = pi / 2) {
+  fixed <- angles
+  for (i in 2:length(fixed)) {
+    delta <- fixed[i] - fixed[i - 1]
+
+    if (abs(delta) > threshold) {
+      if (delta > 0) {
+        fixed[i:length(fixed)] <- fixed[i:length(fixed)] - pi
+      } else {
+        fixed[i:length(fixed)] <- fixed[i:length(fixed)] + pi
+      }
+    }
+  }
+  return(fixed)
+}
+
+```
+
+
+```{r}
+
+angle_array$abdomen_x <- 0
+
+# Assume mocap_data is your input dataframe and angle_array is your output
+euler_angles <- apply(mocap_data, 1, function(row) {
+  quat_to_euler(row["abdomen_X"], row["abdomen_Y"], row["abdomen_Z"], row["abdomen_W"])
+})
+
+# 'euler_angles' will be a matrix with 3 rows: roll (X), pitch (Y), yaw (Z)
+# Transpose to make each row correspond to a frame
+euler_angles <- t(euler_angles)
+
+# Assign abdomen_x as roll (rotation about X-axis)
+angle_array$abdomen_x <- euler_angles[, 1]
+
+head(angle_array)
+
+```
+
+```{r}
+
+for (i in 1:nrow(mocap_data)) {
+  q_upperarm <- c(mocap_data$right_upper_arm_W[i],
+                  mocap_data$right_upper_arm_X[i],
+                  mocap_data$right_upper_arm_Y[i],
+                  mocap_data$right_upper_arm_Z[i])
+
+  q_forearm <- c(mocap_data$right_forearm_W[i],
+                 mocap_data$right_forearm_X[i],
+                 mocap_data$right_forearm_Y[i],
+                 mocap_data$right_forearm_Z[i])
+
+  q_upperarm <- normalize_quat(q_upperarm)
+  q_forearm <- normalize_quat(q_forearm)
+
+  q_rel <- quat_relative(q_upperarm, q_forearm)
+  euler_angles <- quat_to_euler2(q_rel)
+  print(euler_angles[1])
+
+  angle_array$elbow_right[i] <- euler_angles[1]
+}
+nrow(mocap_data)
+for (i in 1:nrow(mocap_data)) {
+  q_upperarm <- c(mocap_data$left_upper_arm_W[i],
+                  mocap_data$left_upper_arm_X[i],
+                  mocap_data$left_upper_arm_Y[i],
+                  mocap_data$left_upper_arm_Z[i])
+
+  q_forearm <- c(mocap_data$left_forearm_W[i],
+                 mocap_data$left_forearm_X[i],
+                 mocap_data$left_forearm_Y[i],
+                 mocap_data$left_forearm_Z[i])
+
+  q_upperarm <- normalize_quat(q_upperarm)
+  q_forearm <- normalize_quat(q_forearm)
+  
+  q_rel <- quat_relative(q_upperarm, q_forearm)
+  euler_angles <- quat_to_euler2(q_rel)
+  print(i)
+  print(euler_angles[1])
+  angle_array$elbow_left[i] <- euler_angles[1]
+}
+
+
+head(angle_array)
+
+```
+
+```{r}
+
+for (i in 1:nrow(mocap_data)) {
+  q_root <- c(mocap_data$base_W[i],
+              mocap_data$Skeleton.002.Skeleton.002_X[i],
+              mocap_data$base_Y[i],
+              mocap_data$base_Z[i])
+
+  q_thigh_right <- c(mocap_data$right_thigh_W[i],
+                     mocap_data$right_thigh_X[i],
+                     mocap_data$right_thigh_Y[i],
+                     mocap_data$right_thigh_Z[i])
+
+  q_rel_right <- quat_relative(q_root, q_thigh_right)
+  euler_right <- quat_to_euler2(q_rel_right)
+
+  angle_array$hip_x_right_0[i] <- euler_right[1]
+  angle_array$hip_x_right_1[i] <- euler_right[2]
+  angle_array$hip_x_right_2[i] <- euler_right[3]
+
+  # Repeat for left side
+  q_thigh_left <- c(mocap_data$left_thigh_W[i],
+                    mocap_data$left_thigh_X[i],
+                    mocap_data$left_thigh_Y[i],
+                    mocap_data$left_thigh_Z[i])
+  
+
+  q_rel_left <- quat_relative(q_root, q_thigh_left)
+  euler_left <- quat_to_euler2(q_rel_left)
+
+  angle_array$hip_x_left_0[i] <- euler_left[1]
+  angle_array$hip_x_left_1[i] <- euler_left[2]
+  angle_array$hip_x_left_2[i] <- euler_left[3]
+}
+
+
+head(angle_array)
+
+```
+
+```{r}
+
+for (i in 1:nrow(mocap_data)) {
+  q_thigh_r <- c(mocap_data$right_thigh_W[i],
+                 mocap_data$right_thigh_X[i],
+                 mocap_data$right_thigh_Y[i],
+                 mocap_data$right_thigh_Z[i])
+  
+  q_shin_r <- c(mocap_data$right_shin_W[i],
+                mocap_data$right_shin_X[i],
+                mocap_data$right_shin_Y[i],
+                mocap_data$right_shin_Z[i])
+  
+  q_rel_r <- quat_relative(q_thigh_r, q_shin_r)
+  euler_r <- quat_to_euler2(q_rel_r)
+  
+  angle_array$knee_right[i] <- euler_r[1]
+
+  q_thigh_l <- c(mocap_data$left_thigh_W[i],
+                 mocap_data$left_thigh_X[i],
+                 mocap_data$left_thigh_Y[i],
+                 mocap_data$left_thigh_Z[i])
+  
+  q_shin_l <- c(mocap_data$left_shin_W[i],
+                mocap_data$left_shin_X[i],
+                mocap_data$left_shin_Y[i],
+                mocap_data$left_shin_Z[i])
+  
+  q_rel_l <- quat_relative(q_thigh_l, q_shin_l)
+  euler_l <- quat_to_euler2(q_rel_l)
+  
+  angle_array$knee_left[i] <- euler_l[1]
+}
+
+
+head(angle_array)
+
+```
+
+```{r}
+
+angle_array$ankle_y_right_0 <- mocap_data$`right_ankle_X` / 1000
+angle_array$ankle_y_right_1 <- mocap_data$`right_ankle_Y` / 1000
+
+angle_array$ankle_y_left_0 <- mocap_data$`left_ankle_X` / 1000
+angle_array$ankle_y_left_1 <- mocap_data$`left_ankle_Y` / 1000
+
+head(angle_array)
+
+```
+
+```{r}
+
+
+# After unwrapping
+# angle_array$elbow_right <- unwrap_angle_sequence(angle_array$elbow_right)
+# angle_array$elbow_left <- unwrap_angle_sequence(angle_array$elbow_left)
+# 
+angle_array$elbow_right <- fix_sharp_jumps(angle_array$elbow_right)
+angle_array$elbow_left <- fix_sharp_jumps(angle_array$elbow_left)
+# 
+# angle_array$knee_right <- unwrap_angle_sequence(angle_array$knee_right)
+# angle_array$knee_left <- unwrap_angle_sequence(angle_array$knee_left)
+# 
+angle_array$knee_right <- fix_sharp_jumps(angle_array$knee_right)
+angle_array$knee_left <- fix_sharp_jumps(angle_array$knee_left)
+
+# angle_array$hip_x_left_0 <- unwrap_angle_sequence(angle_array$hip_x_left_0)
+# angle_array$hip_x_left_1 <- unwrap_angle_sequence(angle_array$hip_x_left_1)
+# angle_array$hip_x_left_2 <- unwrap_angle_sequence(angle_array$hip_x_left_2)
+
+angle_array$hip_x_left_0 <- fix_sharp_jumps(angle_array$hip_x_left_0)
+angle_array$hip_x_left_1 <- fix_sharp_jumps(angle_array$hip_x_left_1)
+angle_array$hip_x_left_2 <- fix_sharp_jumps(angle_array$hip_x_left_2)
+
+# View(angle_array[1000:1250,])
+# 
+# angle_array[183:352, "elbow_right"] <- angle_array[183:352, "elbow_right"] - pi
+# angle_array[610:862, "elbow_right"] <- angle_array[610:862, "elbow_right"] - pi
+# angle_array[1084:1246, "elbow_right"] <- angle_array[1084:1246, "elbow_right"] - pi
+
+
+```
+
+```{r}
+
+angle_array
+
+```
+
+```{r}
+# angle_array[1:89, "elbow_left"] <- angle_array[1:89, "elbow_left"] + pi
+# angle_array[222:424, "elbow_left"] <- angle_array[222:424, "elbow_left"] + pi
+# angle_array[568:755, "elbow_left"] <- angle_array[568:755, "elbow_left"] + pi
+# angle_array[873:755, "elbow_left"] <- angle_array[873:755, "elbow_left"] + pi
+
+```
+
+
+```{r}
+
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_double_arm_lat.csv")
+
+# path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_lhand_test.csv")
+# path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_lhand_new.csv")
+
+write.csv(angle_array, path, row.names = FALSE)
+
+angle_array
+# remove constant manually 
+# add pi when elbow left becomes negative
+# either add pi to top or bottom - row 221 - lhand
+# rhand - 181 + 2pi to make continuous - end 221
+# any way to remove the pi jam
+```
+
+
+```{r}
+
+library(ggplot2)
+
+ggplot(angle_array, aes(x = time_ms)) +
+  geom_line(aes(y = elbow_right, color = "elbow_right")) +
+  geom_line(aes(y = elbow_left, color = "elbow_left")) +
+  labs(title = "Elbow Right & Left Angles over time", x = "Time (ms)", y = "Angle (rad)") +
+  scale_color_manual(values = c("elbow_right" = "blue", "elbow_left" = "red")) +
+  theme_minimal()
+
+
+subset_data <- angle_array[angle_array$time_ms >= 10350 & angle_array$time_ms <= 10425, ]
+
+ggplot(angle_array, aes(x = time_ms, y = elbow_right)) +
+  geom_line(color = "purple") +
+  labs(title = "Elbow Right Angles",
+       x = "Time (ms)",
+       y = "Angle (rad)") +
+  theme_minimal()
+
+ggplot(angle_array, aes(x = time_ms, y = elbow_left)) +
+  geom_line(color = "purple") +
+  labs(title = "Elbow Left Angles",
+       x = "Time (ms)",
+       y = "Angle (rad)") +
+  theme_minimal()
+
+
+# View(angle_array[1000:1461,])
+
+# reverse the sign
+# subtract the jump 
+
+```
+

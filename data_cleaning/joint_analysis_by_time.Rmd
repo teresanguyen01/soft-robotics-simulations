@@ -37,6 +37,7 @@ ggplot(elbow_data, aes(x = time_ms, y = angle, color = joint)) +
   theme_minimal()
 
 ```
+
 ```{r}
 
 ggplot(angle_array, aes(x = time_ms)) +
