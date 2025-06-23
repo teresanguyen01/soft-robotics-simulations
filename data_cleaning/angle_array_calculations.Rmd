@@ -1,6 +1,9 @@
 ---
 title: "Angle Array Calculations"
-output: html_notebook
+date: "06-16-2025 - 06-20-2025"
+output:
+  word_document: default
+  html_notebook: default
 ---
 
 **Purpose**

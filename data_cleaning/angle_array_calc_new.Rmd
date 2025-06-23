@@ -16,15 +16,17 @@ library(signal)
 
 ```{r}
 
-mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/double_arm_lat_mocap_cleaned.csv")
-# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/bending_back_mocap_cleaned.csv")
-# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap_cleaned.csv")
+# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/double_arm_lat_mocap_cleaned.csv")
+mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/bending_back_mocap_cleaned.csv")
+# mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_rhand_mocap_cleaned.csv")
 # mocap_data <- read.csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/raise_lhand_mocap_cleaned.csv")
 
 colnames(mocap_data)
 head(mocap_data)
 
 ```
+
+
 ```{r}
 
 headers <- c("time_ms", "x", "y", "z", "qw", "qx", "qy", "qz", "abdomen_z_0", "abdomen_z_1", "shoulder1_right_0", "shoulder1_right_1", "shoulder1_left_0", "shoulder1_left_1", "abdomen_x", "elbow_right", "elbow_left", "hip_x_right_0", "hip_x_right_1", "hip_x_right_2", "hip_x_left_0", "hip_x_left_1", "hip_x_left_2", "knee_right", "knee_left", "ankle_y_right_0", "ankle_y_right_1", "ankle_y_left_0", "ankle_y_left_1")
@@ -332,21 +334,21 @@ head(angle_array)
 
 
 # After unwrapping
-# angle_array$elbow_right <- unwrap_angle_sequence(angle_array$elbow_right)
-# angle_array$elbow_left <- unwrap_angle_sequence(angle_array$elbow_left)
+angle_array$elbow_right <- unwrap_angle_sequence(angle_array$elbow_right)
+angle_array$elbow_left <- unwrap_angle_sequence(angle_array$elbow_left)
 # 
 angle_array$elbow_right <- fix_sharp_jumps(angle_array$elbow_right)
 angle_array$elbow_left <- fix_sharp_jumps(angle_array$elbow_left)
 # 
-# angle_array$knee_right <- unwrap_angle_sequence(angle_array$knee_right)
-# angle_array$knee_left <- unwrap_angle_sequence(angle_array$knee_left)
+angle_array$knee_right <- unwrap_angle_sequence(angle_array$knee_right)
+angle_array$knee_left <- unwrap_angle_sequence(angle_array$knee_left)
 # 
 angle_array$knee_right <- fix_sharp_jumps(angle_array$knee_right)
 angle_array$knee_left <- fix_sharp_jumps(angle_array$knee_left)
 
-# angle_array$hip_x_left_0 <- unwrap_angle_sequence(angle_array$hip_x_left_0)
-# angle_array$hip_x_left_1 <- unwrap_angle_sequence(angle_array$hip_x_left_1)
-# angle_array$hip_x_left_2 <- unwrap_angle_sequence(angle_array$hip_x_left_2)
+angle_array$hip_x_left_0 <- unwrap_angle_sequence(angle_array$hip_x_left_0)
+angle_array$hip_x_left_1 <- unwrap_angle_sequence(angle_array$hip_x_left_1)
+angle_array$hip_x_left_2 <- unwrap_angle_sequence(angle_array$hip_x_left_2)
 
 angle_array$hip_x_left_0 <- fix_sharp_jumps(angle_array$hip_x_left_0)
 angle_array$hip_x_left_1 <- fix_sharp_jumps(angle_array$hip_x_left_1)
@@ -378,10 +380,10 @@ angle_array
 
 ```{r}
 
-path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_double_arm_lat.csv")
+# path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_double_arm_lat.csv")
 
 # path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_lhand_test.csv")
-# path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_lhand_new.csv")
+path <- file.path("~", "Documents", "Faboratory Stuff", "soft-robotics-simulations", "data", "aa_rhand_new.csv")
 
 write.csv(angle_array, path, row.names = FALSE)
 
@@ -406,7 +408,7 @@ ggplot(angle_array, aes(x = time_ms)) +
   theme_minimal()
 
 
-subset_data <- angle_array[angle_array$time_ms >= 10350 & angle_array$time_ms <= 10425, ]
+# subset_data <- angle_array[angle_array$time_ms >= 10350 & angle_array$time_ms <= 10425, ]
 
 ggplot(angle_array, aes(x = time_ms, y = elbow_right)) +
   geom_line(color = "purple") +
@@ -427,6 +429,7 @@ ggplot(angle_array, aes(x = time_ms, y = elbow_left)) +
 
 # reverse the sign
 # subtract the jump 
+# apply a constant to all angles and apply data
 
 ```
 
