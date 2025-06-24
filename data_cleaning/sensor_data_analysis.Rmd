@@ -1,0 +1,178 @@
+---
+title: "Sensor Data Analysis"
+output: html_notebook
+---
+
+Initial Analysis of the sensor data. 
+
+## Right Hand
+
+```{r}
+
+library(tidyverse)
+
+df <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_data/rhand_sensor.csv")
+
+head(df)
+
+df_long <- df %>%
+  mutate(`Time (ms)` = `Time (ms)` - first(`Time (ms)`)) %>%
+  pivot_longer(
+    cols      = starts_with("Sensor"),
+    names_to  = "Sensor",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = `Time (ms)`, y = Value, color = Sensor)) +
+  geom_line() +
+  labs(
+    title = "Right Hand Sensors (All)",
+    x     = "Time since start (ms)",
+    y     = "Sensor Reading"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+```{r}
+
+sensor_cols <- c("Sensor 10", "Sensor 9", "Sensor 18", "Sensor 1", "Sensor 2", "Sensor 7")
+
+df_long <- df %>%
+  select(`Time (ms)`, all_of(sensor_cols)) %>%
+  mutate(`Time (ms)` = `Time (ms)` - first(`Time (ms)`)) %>%
+  pivot_longer(
+    cols      = all_of(sensor_cols),
+    names_to  = "Sensors",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = `Time (ms)`, y = Value, color = Sensors)) +
+  geom_line() +
+  labs(
+    title = "Right Hand Sensors (Subset)",
+    x     = "Time since start (ms)",
+    y     = "Sensors"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+
+```{r}
+
+df <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/aa_rhand_new.csv")
+
+joint_cols <- c("abdomen_z_0", "abdomen_z_1", "shoulder1_right_0", "shoulder1_right_1", "shoulder1_left_0", "shoulder1_left_1", "abdomen_x", "elbow_right", "elbow_left", "hip_x_right_0", "hip_x_right_1", "hip_x_right_2", "hip_x_left_0", "hip_x_left_1", "hip_x_left_2")
+
+df_long <- df %>%
+  select(time_ms, all_of(joint_cols)) %>%
+  mutate(time_ms = time_ms - first(time_ms)) %>%
+  pivot_longer(
+    cols      = all_of(joint_cols),
+    names_to  = "Joints",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = time_ms, y = Value, color = Joints)) +
+  geom_line() +
+  labs(
+    title = "Right Hand Mocap Data",
+    x     = "Time since start (ms)",
+    y     = "Joints"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+
+## Left Hand
+
+```{r}
+
+df <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_data/lhand_sensor.csv")
+
+head(df)
+
+df_long <- df %>%
+  mutate(`Time (ms)` = `Time (ms)` - first(`Time (ms)`)) %>%
+  pivot_longer(
+    cols      = starts_with("Sensor"),
+    names_to  = "Sensor",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = `Time (ms)`, y = Value, color = Sensor)) +
+  geom_line() +
+  labs(
+    title = "Left Hand Sensors (All)",
+    x     = "Time since start (ms)",
+    y     = "Sensor Reading"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+
+```{r}
+
+sensor_cols <- c("Sensor 10", "Sensor 9", "Sensor 18", "Sensor 1", "Sensor 2", "Sensor 7")
+
+df_long <- df %>%
+  select(`Time (ms)`, all_of(sensor_cols)) %>%
+  mutate(`Time (ms)` = `Time (ms)` - first(`Time (ms)`)) %>%
+  pivot_longer(
+    cols      = all_of(sensor_cols),
+    names_to  = "Sensors",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = `Time (ms)`, y = Value, color = Sensors)) +
+  geom_line() +
+  labs(
+    title = "Right Hand Sensors (Subset)",
+    x     = "Time since start (ms)",
+    y     = "Sensors"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+
+```{r}
+
+df <- read_csv("/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/data/aa_lhand_new.csv")
+
+joint_cols <- c("abdomen_z_0", "abdomen_z_1", "shoulder1_right_0", "shoulder1_right_1", "shoulder1_left_0", "shoulder1_left_1", "abdomen_x", "elbow_right", "elbow_left", "hip_x_right_0", "hip_x_right_1", "hip_x_right_2", "hip_x_left_0", "hip_x_left_1", "hip_x_left_2")
+
+df_long <- df %>%
+  select(time_ms, all_of(joint_cols)) %>%
+  mutate(time_ms = time_ms - first(time_ms)) %>%
+  pivot_longer(
+    cols      = all_of(joint_cols),
+    names_to  = "Joints",
+    values_to = "Value"
+  )
+
+ggplot(df_long, aes(x = time_ms, y = Value, color = Joints)) +
+  geom_line() +
+  labs(
+    title = "Right Hand Mocap Data",
+    x     = "Time since start (ms)",
+    y     = "Joints"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.title    = element_blank())
+
+```
+
+```{r}
+
+
+df
