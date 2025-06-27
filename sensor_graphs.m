@@ -1,7 +1,7 @@
 %% Setup workspace
 clc; clear; close all;
 
-%% Define your “jobs”
+%% Jobs needed 
 jobs = {
     '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/rhand_062325.csv',          'Right Hand Sensor Data: 06/23/2025',              '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/figures/rhand_sensor_062325.jpg';
     '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/lhand_sensor_062325.csv',    'Left Hand Sensor Data: 06/23/2025',               '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/figures/lhand_sensor_062325.jpg';
@@ -17,6 +17,7 @@ jobs = {
     '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/rhand_slow_sensor_062325.csv','Right Arm Slow Data: 06/23/2025',             '/Users/teresanguyen/Documents/Faboratory Stuff/soft-robotics-simulations/sensor_062325/figures/rhand_slow_sensor_062325.jpg';
 };
 
+% change col names
 col_list = {
     'Right shoulder (back)'
     'Right shoulder (front)'
@@ -49,14 +50,14 @@ col_list = {
 for k = 1:size(jobs,1)
     infile   = jobs{k,1};
     figTitle = jobs{k,2};
-    outjpg   = jobs{k,3};  % can be empty if you don’t need to save
+    outjpg   = jobs{k,3};  
     
-    %––– read & prep –––
+    % preparation/rename columns
     T = readtable(infile);
     assert(width(T) == numel(col_list), ...
            'Column count mismatch: %d in table vs %d in col_list', ...
            width(T), numel(col_list));
-    % makeValidName turns any string into a legal MATLAB identifier
+
     T.Properties.VariableNames = matlab.lang.makeValidName(col_list);
     
     data     = T{:,:};
@@ -65,7 +66,7 @@ for k = 1:size(jobs,1)
     nRows    = ceil(sqrt(nPlots));
     nCols    = ceil(nPlots / nRows);
     
-    %––– create figure –––
+    % figure creation
     figure;
     set(gcf, 'Units','Normalized','OuterPosition',[0 0 1 1]);
     for i = 1:nPlots
@@ -77,9 +78,9 @@ for k = 1:size(jobs,1)
         title(ax, varNames{i}, 'Interpreter','none');
     end
     
-    %––– overall title & optional save –––
+    % change title & file 
     sgtitle(figTitle);
-    %––– optional save –––
+
     if ~isempty(outjpg)
         saveas(gcf, outjpg);
     end
