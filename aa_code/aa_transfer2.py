@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import argparse
 
-# ─── quaternion math ────────────────────────────────────────────────────────────
 def quat_inverse(q):
     w, x, y, z = q
     norm2 = w*w + x*x + y*y + z*z
@@ -33,12 +32,10 @@ def quat_to_expmap(q):
     return axis * angle
 
 
-# ─── build qpos ────────────────────────────────────────────────────────────────
 def make_qpos(mocap_csv, out_csv):
     df = pd.read_csv(mocap_csv)
     n = len(df)
 
-    # exact DOF names expected in output
     dof_names = [
         "time_ms",
         "x", "y", "z", "qw", "qx", "qy", "qz",
@@ -54,11 +51,9 @@ def make_qpos(mocap_csv, out_csv):
         "ankle_y_left_0", "ankle_y_left_1",
     ]
 
-    # prepare output DataFrame
     out = pd.DataFrame(columns=dof_names)
     out["time_ms"] = df["time_ms"]
 
-    # root translation (in mm)
     out["x"]  = df["base_X.1"]
     out["y"]  = df["base_Y.1"]
     out["z"]  = df["base_Z.1"]
@@ -67,11 +62,9 @@ def make_qpos(mocap_csv, out_csv):
     out["qy"] = df["base_Y"]
     out["qz"] = df["base_Z"]
 
-    # planar joints (positions in mm)
     def plan(col_name, child, parent, axis):
         out[col_name] = df[f"{child}_{axis}.1"] - df[f"{parent}_{axis}.1"]
 
-        # ── revolute & knee: compute raw values ───────────────────────────────────────
     def revolute_raw(col_name, child_seg, parent_seg, axis_vec):
         vals = np.zeros(n)
         qc = df[[f"{child_seg}_W", f"{child_seg}_X", f"{child_seg}_Y", f"{child_seg}_Z"]].values
@@ -81,6 +74,7 @@ def make_qpos(mocap_csv, out_csv):
             v    = quat_to_expmap(qrel)
             vals[i] = np.dot(v, axis_vec)
         out[col_name] = vals
+        
     plan("abdomen_z_0", "abdomen",      "base",       "X")
     plan("abdomen_z_1", "abdomen",      "base",       "Y")
 
@@ -99,9 +93,7 @@ def make_qpos(mocap_csv, out_csv):
     plan("ankle_y_left_0",    "left_ankle",     "left_knee",  "X")
     plan("ankle_y_left_1",    "left_ankle",     "left_knee",  "Y")
 
-    # ── abdomen hinges ─────────────────────────────────────────────
-    # hinge axes from xml
-    az = np.array([0., 0., 1.])                    # floats from the start
+    az = np.array([0., 0., 1.])
     az /= np.linalg.norm(az)
 
     ay = np.array([0., 1., 0.])
@@ -110,16 +102,15 @@ def make_qpos(mocap_csv, out_csv):
     # revolute_raw("abdomen_z_0_raw", "chest", "abdomen", np.array([0.,0.,1.]))
     # revolute_raw("abdomen_z_1_raw", "chest", "abdomen", np.array([0.,1.,0.]))
 
-
-    # ── ankle hinges ──────────────────────────────────────────────
-    ayR = np.array([0., 1., 0.])            # float literals
+    ayR = np.array([0., 1., 0.])
     ayR /= np.linalg.norm(ayR)
 
-    axR = np.array([1., 0., 0.5])          # float literals
+    axR = np.array([1., 0., 0.5])
     axR /= np.linalg.norm(axR)
 
     ayL = ayR.copy()
-    axL = np.array([1,0,-0.5]);axL/=np.linalg.norm(axL)
+    axL = np.array([1,0,-0.5]);
+    axL/=np.linalg.norm(axL)
 
     # revolute_raw("ankle_y_right_0_raw", "right_foot", "right_shin", ayR)
     # revolute_raw("ankle_y_right_1_raw", "right_foot", "right_shin", axR)
@@ -136,9 +127,7 @@ def make_qpos(mocap_csv, out_csv):
         cosang = np.clip(dots / (n1 * n2), -1.0, 1.0)
         out[col_name] = np.arccos(cosang)
 
-    # compute raw joint values
     revolute_raw("abdomen_x_raw", "chest", "abdomen", np.array([1,0,0]))
-    # elbow hinge axes from your XML
     eR = np.array([ 0.0,  1.0, -1.0])
     eL = np.array([ 0.0, -1.0, -1.0])
     eR /= np.linalg.norm(eR)
@@ -165,7 +154,6 @@ def make_qpos(mocap_csv, out_csv):
     revolute_raw("shoulder1_left_1_raw",  "left_upper_arm",  "abdomen", s2L)
 
 
-    # ── correct sign & zero-offset per joint ─────────────────────────────────────
     # abdomen_x: subtract initial offset
     #"abdomen_z_0","abdomen_z_1",
     for base in ["abdomen_x"]:
@@ -174,23 +162,17 @@ def make_qpos(mocap_csv, out_csv):
         out[base] = vals - vals[0]
 
 
-    # ── finalize elbows so rest = −2.1 rad and motion is relative to that ──────
     for name in ["elbow_left", "elbow_right"]:
-        raw = out.pop(name + "_raw").values    # shape (n,)
-        # raw is already the signed rotation about your elbow axis
-        rest_offset = -2.1                     # what you want at frame 0
-        # baseline to zero at frame 0, then add rest_offset
+        raw = out.pop(name + "_raw").values
+        rest_offset = -2.1
         out[name] = (raw - raw[0]) + rest_offset
 
-
-    # knees: zero at first frame
     for name in ["knee_right", "knee_left"]:
         raw = name + "_raw"
         vals = out[raw].values
         out[name] = vals - vals[0]
         del out[raw]
 
-    # ── shoulders: zero at first frame ─────────────────────────────────────────
     for base in [
         "shoulder1_right_0", "shoulder1_right_1",
         "shoulder1_left_0",  "shoulder1_left_1"
@@ -199,9 +181,6 @@ def make_qpos(mocap_csv, out_csv):
         vals = out.pop(raw).values
         out[base] = vals - vals[0]
 
-        
-
-    # ── spherical joints (exp-map) ────────────────────────────────────────────────
     def spherical(start, child, parent):
         expm = np.zeros((n,3))
         qc = df[[f"{child}_W", f"{child}_X", f"{child}_Y", f"{child}_Z"]].values
@@ -222,7 +201,6 @@ def make_qpos(mocap_csv, out_csv):
     #     vals = out.pop(raw).values
     #     out[base] = vals - vals[0]
 
-    # ── convert mm→m for all positional DOFs ─────────────────────────────────────
     linear = [
         "x","y","z",
         "abdomen_z_0","abdomen_z_1",
@@ -233,7 +211,6 @@ def make_qpos(mocap_csv, out_csv):
     ]
     out[linear] = out[linear] / 1000.0
 
-    # ── write out ────────────────────────────────────────────────────────────────
     out.to_csv(out_csv, index=False)
     print(f"Wrote {n} frames → {out_csv}")
 
